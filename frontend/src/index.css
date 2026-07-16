@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply font-sans antialiased;
+  }
+
+  .dark body {
+    @apply bg-dark-950 text-slate-100;
+  }
+  .light body {
+    @apply bg-slate-50 text-slate-900;
+  }
+}
+
+@layer components {
+  /* Card */
+  .card {
+    @apply rounded-2xl border backdrop-blur-sm transition-all duration-200;
+  }
+  .dark .card {
+    @apply bg-dark-900/80 border-white/5 shadow-xl shadow-black/20;
+  }
+  .light .card {
+    @apply bg-white border-slate-200 shadow-lg shadow-slate-200/60;
+  }
+
+  /* Glass card */
+  .glass {
+    @apply rounded-2xl border backdrop-blur-md;
+  }
+  .dark .glass {
+    @apply bg-white/5 border-white/10;
+  }
+  .light .glass {
+    @apply bg-white/80 border-slate-200/80;
+  }
+
+  /* Input */
+  .input {
+    @apply w-full rounded-xl px-4 py-3 text-sm outline-none transition-all duration-200 border;
+  }
+  .dark .input {
+    @apply bg-dark-800 border-white/10 text-slate-100 placeholder-slate-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+  .light .input {
+    @apply bg-white border-slate-200 text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20;
+  }
+
+  /* Button primary */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-500 active:scale-95 transition-all duration-150 disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
+  /* Button secondary */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-150 active:scale-95 border;
+  }
+  .dark .btn-secondary {
+    @apply bg-white/5 border-white/10 text-slate-300 hover:bg-white/10;
+  }
+  .light .btn-secondary {
+    @apply bg-slate-100 border-slate-200 text-slate-700 hover:bg-slate-200;
+  }
+
+  /* Sidebar item */
+  .sidebar-item {
+    @apply flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer;
+  }
+  .dark .sidebar-item {
+    @apply text-slate-400 hover:text-slate-100 hover:bg-white/5;
+  }
+  .light .sidebar-item {
+    @apply text-slate-600 hover:text-slate-900 hover:bg-slate-100;
+  }
+  .sidebar-item.active {
+    @apply text-brand-400 bg-brand-500/10;
+  }
+  .dark .sidebar-item.active {
+    @apply text-brand-400 bg-brand-500/10;
+  }
+  .light .sidebar-item.active {
+    @apply text-brand-600 bg-brand-50;
+  }
+
+  /* Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  .dark ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+  .light ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+
+  /* Leaflet customizations */
+  .leaflet-container {
+    @apply font-sans;
+  }
+  .dark .leaflet-container {
+    filter: brightness(0.9) contrast(1.1);
+  }
+
+  /* Popup */
+  .leaflet-popup-content-wrapper {
+    @apply rounded-xl shadow-2xl border-0 !important;
+    padding: 0 !important;
+  }
+  .dark .leaflet-popup-content-wrapper {
+    background: #1e293b !important;
+    color: #f1f5f9 !important;
+  }
+  .light .leaflet-popup-content-wrapper {
+    background: #ffffff !important;
+    color: #1e293b !important;
+  }
+  .leaflet-popup-content {
+    margin: 0 !important;
+  }
+  .dark .leaflet-popup-tip {
+    background: #1e293b !important;
+  }
+  .light .leaflet-popup-tip {
+    background: #ffffff !important;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-400 to-blue-300;
+  }
+  .animate-fade-in { animation: fadeIn 0.3s ease-out; }
+  .animate-slide-in { animation: slideIn 0.3s ease-out; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Pulse animation for live indicators */
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+.live-pulse { animation: livePulse 1.5s ease-in-out infinite; }
