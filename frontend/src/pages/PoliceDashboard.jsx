@@ -71,8 +71,18 @@ export default function PoliceDashboard() {
   const { socket, assignedAlert, clearAssignedAlert, emitLocation, liveAlerts, setLiveAlerts } = useSocket();
 
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, nearby-alerts, live-map, history, profile
-  const [lat, setLat] = useState(user?.lat || 13.0835);
-  const [lng, setLng] = useState(user?.lng || 80.2710);
+  
+  const getInitialCoordinates = () => {
+    if (user?.selectedDistrict) {
+      const dist = TN_DISTRICTS.find(d => d.name === user.selectedDistrict);
+      if (dist) return { lat: dist.lat, lng: dist.lng };
+    }
+    return { lat: user?.lat || 13.0835, lng: user?.lng || 80.2710 };
+  };
+
+  const initialCoords = getInitialCoordinates();
+  const [lat, setLat] = useState(initialCoords.lat);
+  const [lng, setLng] = useState(initialCoords.lng);
   const [locationStatus, setLocationStatus] = useState('Location Active');
   
   // Cases history and filters

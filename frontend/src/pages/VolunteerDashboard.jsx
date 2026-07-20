@@ -11,6 +11,7 @@ import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { getStatusBadge, timeAgo } from '../utils/helpers';
+import { TN_DISTRICTS } from '../data/districts';
 import toast from 'react-hot-toast';
 
 // Custom icons
@@ -68,8 +69,18 @@ export default function VolunteerDashboard() {
   const { socket, assignedAlert, clearAssignedAlert, emitLocation, liveAlerts, setLiveAlerts } = useSocket();
 
   const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, nearby-emergencies, district-map, accepted, history
-  const [lat, setLat] = useState(user?.lat || 13.0850);
-  const [lng, setLng] = useState(user?.lng || 80.2750);
+  
+  const getInitialCoordinates = () => {
+    if (user?.selectedDistrict) {
+      const dist = TN_DISTRICTS.find(d => d.name === user.selectedDistrict);
+      if (dist) return { lat: dist.lat, lng: dist.lng };
+    }
+    return { lat: user?.lat || 13.0850, lng: user?.lng || 80.2750 };
+  };
+
+  const initialCoords = getInitialCoordinates();
+  const [lat, setLat] = useState(initialCoords.lat);
+  const [lng, setLng] = useState(initialCoords.lng);
   const [locationStatus, setLocationStatus] = useState('Location Active');
 
   const [cases, setCases] = useState([]);
