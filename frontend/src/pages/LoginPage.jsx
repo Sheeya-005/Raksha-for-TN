@@ -98,31 +98,21 @@ export default function LoginPage() {
     setTimeout(() => drawCaptcha(text), 50);
   };
 
-  // Re-draw captcha when step transitions to credentials
+  // Draw captcha when step transitions or captchaText updates
   useEffect(() => {
-    if (step === 'credentials') {
-      refreshCaptcha();
+    if (step === 'credentials' && captchaText) {
+      const timer = setTimeout(() => {
+        drawCaptcha(captchaText);
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [step]);
+  }, [step, captchaText]);
 
   const selectRole = (role) => {
     setSelectedRole(role);
     setStep('credentials');
-    
-    // Autofill credentials helper
-    let email = '';
-    let password = '';
-    if (role === 'admin') {
-      email = 'admin@safetytamil.in';
-      password = 'admin123';
-    } else if (role === 'police') {
-      email = 'police@safetytamil.in';
-      password = 'police123';
-    } else {
-      email = 'volunteer@safetytamil.in';
-      password = 'volunteer123';
-    }
-    setForm({ email, password });
+    setForm({ email: '', password: '' });
+    refreshCaptcha();
   };
 
   const handleQuickLogin = async (role) => {
@@ -272,6 +262,15 @@ export default function LoginPage() {
               </button>
             </div>
 
+            <div className="text-center py-2 space-y-1 border-t border-slate-850 pt-4">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">New to the platform?</p>
+              <div className="flex items-center justify-center gap-4 text-xs">
+                <Link to="/volunteer/register" className="text-cyan-500 hover:underline font-bold">Register as Volunteer</Link>
+                <span className="text-slate-700">|</span>
+                <Link to="/police/register" className="text-blue-500 hover:underline font-bold">Register as Officer</Link>
+              </div>
+            </div>
+
             <button
               onClick={() => navigate('/')}
               className="w-full flex items-center justify-center gap-1.5 py-3 border border-slate-800 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900 transition-all cursor-pointer"
@@ -391,6 +390,12 @@ export default function LoginPage() {
               <p className="text-center text-xs text-slate-500">
                 Not a registered police officer?{' '}
                 <Link to="/police/register" className="text-blue-500 hover:underline font-bold">Register as Officer</Link>
+              </p>
+            )}
+
+            {selectedRole === 'admin' && (
+              <p className="text-center text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                Administrator access is restricted. Contact operations for credentials.
               </p>
             )}
 
