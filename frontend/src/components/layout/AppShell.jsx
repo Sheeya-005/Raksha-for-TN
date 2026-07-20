@@ -144,7 +144,7 @@ export default function AppShell({ children, selectedDistrict, onDistrictChange 
       {/* Main content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top header */}
-        <header className={`flex items-center gap-3 px-4 py-3 border-b flex-shrink-0 ${
+        <header className={`relative z-40 flex items-center gap-3 px-4 py-3 border-b flex-shrink-0 ${
           isDark ? 'bg-dark-900/80 border-white/5 backdrop-blur-md' : 'bg-white/80 border-slate-200 backdrop-blur-md'
         }`}>
           {/* Mobile menu toggle */}

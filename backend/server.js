@@ -9,22 +9,29 @@ import userRoutes from './routes/users.js';
 import alertRoutes from './routes/alerts.js';
 import deviceRoutes from './routes/devices.js';
 import districtRoutes from './routes/districts.js';
+import emergencyRoutes from './routes/emergency.js';
 import { setupSocketHandlers } from './socket/handlers.js';
+import { seedDatabase, setDbConnected } from './models/dbStore.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });
 
 // Middleware
-app.use(cors({ origin: process.env.FRONTEND_URL || 'http://localhost:5173' }));
+app.use(cors());
 app.use(express.json());
 
 // Health check
@@ -36,6 +43,19 @@ app.use('/api/users', userRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/districts', districtRoutes);
+app.use('/api/emergency', emergencyRoutes);
+
+// Serve static assets from frontend build
+const frontendBuildPath = path.join(__dirname, '../frontend/dist');
+app.use(express.static(frontendBuildPath));
+
+// Fallback all other non-API routes to index.html for React SPA routing
+app.get('*', (req, res, next) => {
+  if (req.url.startsWith('/api') || req.url.startsWith('/socket.io')) {
+    return next();
+  }
+  res.sendFile(path.join(frontendBuildPath, 'index.html'));
+});
 
 // WebSocket handlers
 setupSocketHandlers(io);
@@ -43,15 +63,21 @@ setupSocketHandlers(io);
 // Connect DB and start server
 const PORT = process.env.PORT || 5000;
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Set connection flag to true
+  setDbConnected(true);
+  // Seed initial records in MySQL
+  await seedDatabase();
+  
   httpServer.listen(PORT, () => {
     console.log(`🛡️  SafeWatch TN Backend running on port ${PORT}`);
     console.log(`🔌 WebSocket server ready`);
     console.log(`🌐 API: http://localhost:${PORT}/api`);
   });
 }).catch(err => {
-  console.error('Failed to connect to MongoDB:', err);
-  console.log('Starting without database (demo mode)...');
+  console.error('Failed to connect to MySQL:', err);
+  console.log('Starting without database (demo mode using in-memory fallback)...');
+  setDbConnected(false);
   httpServer.listen(PORT, () => {
     console.log(`🛡️  SafeWatch TN Backend running on port ${PORT} (demo mode)`);
   });

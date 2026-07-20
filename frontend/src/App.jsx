@@ -1,35 +1,31 @@
-import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { SocketProvider } from './context/SocketContext';
-import AppShell from './components/layout/AppShell';
-import LoginPage from './pages/LoginPage';
-import SignupPage from './pages/SignupPage';
-import PermissionsPage from './pages/PermissionsPage';
-import DashboardPage from './pages/DashboardPage';
-import MapPage from './pages/MapPage';
-import AlertsPage from './pages/AlertsPage';
-import NotificationsPage from './pages/NotificationsPage';
-import DistrictsPage from './pages/DistrictsPage';
-import SmartwatchPage from './pages/SmartwatchPage';
-import ContactsPage from './pages/ContactsPage';
-import ProfilePage from './pages/ProfilePage';
-import SettingsPage from './pages/SettingsPage';
-import AdminPage from './pages/AdminPage';
 
-function ProtectedRoutes() {
+// Pages imports
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import PermissionsPage from './pages/PermissionsPage';
+import DistrictSelectionPage from './pages/DistrictSelectionPage';
+import BandSimulator from './pages/BandSimulator';
+import AdminDashboard from './pages/AdminDashboard';
+import PoliceDashboard from './pages/PoliceDashboard';
+import VolunteerDashboard from './pages/VolunteerDashboard';
+import PhoneSosPage from './pages/PhoneSosPage';
+
+function ProtectedRoute({ children, allowedRole }) {
   const { user, loading, permissionsGranted } = useAuth();
   const { isDark } = useTheme();
-  const [selectedDistrict, setSelectedDistrict] = useState(null);
 
   if (loading) {
     return (
-      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'dark bg-dark-950' : 'light bg-slate-50'}`}>
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-slate-950 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
         <div className="text-center">
-          <div className="w-10 h-10 border-2 border-brand-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className={`text-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Loading…</p>
+          <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs font-bold uppercase tracking-wider">Syncing safety protocols…</p>
         </div>
       </div>
     );
@@ -37,40 +33,18 @@ function ProtectedRoutes() {
 
   if (!user) return <Navigate to="/login" replace />;
   if (!permissionsGranted) return <Navigate to="/permissions" replace />;
+  
+  // Ensure intermediate district selection is completed
+  if (!user.selectedDistrict && window.location.pathname !== '/select-district') {
+    return <Navigate to="/select-district" replace />;
+  }
+  
+  if (allowedRole && user.role !== allowedRole) {
+    // Role mismatch
+    return <Navigate to="/" replace />;
+  }
 
-  const handleDistrictChange = (district) => {
-    setSelectedDistrict(district ? district.name : null);
-  };
-
-  return (
-    <AppShell selectedDistrict={selectedDistrict} onDistrictChange={handleDistrictChange}>
-      <Routes>
-        <Route path="/dashboard" element={<DashboardPage selectedDistrict={selectedDistrict} />} />
-        <Route path="/map" element={
-          <MapPage
-            selectedDistrict={selectedDistrict}
-            onDistrictChange={handleDistrictChange}
-          />
-        } />
-        <Route path="/alerts" element={<AlertsPage />} />
-        <Route path="/notifications" element={<NotificationsPage />} />
-        <Route path="/districts" element={<DistrictsPage onDistrictChange={handleDistrictChange} />} />
-        <Route path="/smartwatch" element={<SmartwatchPage />} />
-        <Route path="/contacts" element={<ContactsPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
-    </AppShell>
-  );
-}
-
-function AuthRoutes() {
-  const { user, permissionsGranted } = useAuth();
-  if (user && !permissionsGranted) return <Navigate to="/permissions" replace />;
-  if (user && permissionsGranted) return <Navigate to="/dashboard" replace />;
-  return null;
+  return children;
 }
 
 function AppRoutes() {
@@ -81,34 +55,62 @@ function AppRoutes() {
         position="top-right"
         toastOptions={{
           style: {
-            background: isDark ? '#1e293b' : '#fff',
-            color: isDark ? '#f1f5f9' : '#1e293b',
-            border: isDark ? '1px solid rgba(255,255,255,0.1)' : '1px solid #e2e8f0',
-            borderRadius: '12px',
-            fontSize: '13px',
+            background: isDark ? '#0f172a' : '#fff',
+            color: isDark ? '#f1f5f9' : '#0f172a',
+            border: isDark ? '1px solid rgba(255,255,255,0.08)' : '1px solid #e2e8f0',
+            borderRadius: '16px',
+            fontSize: '12px',
+            fontWeight: 'bold',
+            padding: '12px 16px'
           },
         }}
       />
       <Routes>
+        {/* Public Routes */}
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/volunteer/register" element={<RegisterPage />} />
+        <Route path="/simulator" element={<BandSimulator />} />
+        <Route path="/sos" element={<PhoneSosPage />} />
+        
+        {/* Permission Gateway */}
         <Route path="/permissions" element={
-          <RequireAuth>
+          <ProtectedRoute>
             <PermissionsPage />
-          </RequireAuth>
+          </ProtectedRoute>
         } />
-        <Route path="/*" element={<ProtectedRoutes />} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+        {/* Intermediate District Selection */}
+        <Route path="/select-district" element={
+          <ProtectedRoute>
+            <DistrictSelectionPage />
+          </ProtectedRoute>
+        } />
+
+        {/* Protected Dashboard Panels */}
+        <Route path="/admin/dashboard" element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/police/dashboard" element={
+          <ProtectedRoute allowedRole="police">
+            <PoliceDashboard />
+          </ProtectedRoute>
+        } />
+
+        <Route path="/volunteer/dashboard" element={
+          <ProtectedRoute allowedRole="volunteer">
+            <VolunteerDashboard />
+          </ProtectedRoute>
+        } />
+
+        {/* Catch-all fallback */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
-}
-
-function RequireAuth({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" replace />;
-  return children;
 }
 
 export default function App() {

@@ -7,27 +7,9 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
-import { DASHBOARD_STATS, ALERT_TREND, MOCK_ALERTS, DISTRICT_STATS } from '../data/mockData';
+import { MOCK_USERS, MOCK_ALERTS, DISTRICT_STATS, ALERT_TREND } from '../data/mockData';
 import { useTheme } from '../context/ThemeContext';
 import { formatDate, getStatusBadge, timeAgo } from '../utils/helpers';
-
-const STAT_CARDS = [
-  { label: 'Total Connected Users', value: DASHBOARD_STATS.totalUsers, icon: Users, color: 'from-blue-600 to-blue-500', trend: '+12%' },
-  { label: 'Active Smartwatches', value: DASHBOARD_STATS.activeWatches, icon: Watch, color: 'from-purple-600 to-purple-500', trend: '+5%' },
-  { label: 'Active Emergency Alerts', value: DASHBOARD_STATS.activeAlerts, icon: AlertTriangle, color: 'from-red-600 to-red-500', trend: '-8%' },
-  { label: 'Resolved Alerts', value: DASHBOARD_STATS.resolvedAlerts, icon: CheckCircle2, color: 'from-green-600 to-green-500', trend: '+23%' },
-  { label: 'Offline Devices', value: DASHBOARD_STATS.offlineDevices, icon: WifiOff, color: 'from-gray-600 to-gray-500', trend: '-2%' },
-  { label: 'Connected Devices', value: DASHBOARD_STATS.connectedDevices, icon: Wifi, color: 'from-cyan-600 to-cyan-500', trend: '+7%' },
-  { label: 'Live Tracking Active', value: DASHBOARD_STATS.liveTracking, icon: Radio, color: 'from-brand-600 to-brand-500', trend: '+15%' },
-];
-
-const PIE_DATA = [
-  { name: 'SOS', value: 18, color: '#ef4444' },
-  { name: 'Fall Detection', value: 12, color: '#f97316' },
-  { name: 'Panic Button', value: 9, color: '#eab308' },
-  { name: 'Low Battery', value: 15, color: '#3b82f6' },
-  { name: 'Offline', value: 6, color: '#6b7280' },
-];
 
 const CHART_COLORS = {
   sos: '#ef4444',
@@ -37,7 +19,6 @@ const CHART_COLORS = {
 };
 
 const topDistricts = [...DISTRICT_STATS].sort((a, b) => b.activeAlerts - a.activeAlerts).slice(0, 8);
-const recentAlerts = [...MOCK_ALERTS].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 8);
 
 function CustomTooltip({ active, payload, label, isDark }) {
   if (!active || !payload?.length) return null;
@@ -56,6 +37,67 @@ function CustomTooltip({ active, payload, label, isDark }) {
 
 export default function DashboardPage({ selectedDistrict }) {
   const { isDark } = useTheme();
+
+  // Filter lists based on selected district
+  const filteredUsers = selectedDistrict
+    ? MOCK_USERS.filter(u => u.district === selectedDistrict)
+    : MOCK_USERS;
+  const filteredAlerts = selectedDistrict
+    ? MOCK_ALERTS.filter(a => a.district === selectedDistrict)
+    : MOCK_ALERTS;
+
+  // Compute dynamic stats
+  const stats = {
+    totalUsers: filteredUsers.length,
+    activeWatches: filteredUsers.filter(u => u.status === 'Online').length,
+    activeAlerts: filteredAlerts.filter(a => a.status === 'Active').length,
+    resolvedAlerts: filteredAlerts.filter(a => a.status === 'Resolved').length,
+    offlineDevices: filteredUsers.filter(u => u.status === 'Offline').length,
+    connectedDevices: filteredUsers.filter(u => u.status === 'Online').length,
+    liveTracking: filteredUsers.filter(u => u.markerType === 'connected' || u.markerType === 'safe').length,
+  };
+
+  const statCards = [
+    { label: 'Total Connected Users', value: stats.totalUsers, icon: Users, color: 'from-blue-600 to-blue-500', trend: '+12%' },
+    { label: 'Active Smartwatches', value: stats.activeWatches, icon: Watch, color: 'from-purple-600 to-purple-500', trend: '+5%' },
+    { label: 'Active Emergency Alerts', value: stats.activeAlerts, icon: AlertTriangle, color: 'from-red-600 to-red-500', trend: '-8%' },
+    { label: 'Resolved Alerts', value: stats.resolvedAlerts, icon: CheckCircle2, color: 'from-green-600 to-green-500', trend: '+23%' },
+    { label: 'Offline Devices', value: stats.offlineDevices, icon: WifiOff, color: 'from-gray-600 to-gray-500', trend: '-2%' },
+    { label: 'Connected Devices', value: stats.connectedDevices, icon: Wifi, color: 'from-cyan-600 to-cyan-500', trend: '+7%' },
+    { label: 'Live Tracking Active', value: stats.liveTracking, icon: Radio, color: 'from-brand-600 to-brand-500', trend: '+15%' },
+  ];
+
+  // Compute dynamic pie data
+  const sosCount = filteredAlerts.filter(a => a.alertType === 'SOS').length;
+  const fallCount = filteredAlerts.filter(a => a.alertType === 'Fall Detection').length;
+  const panicCount = filteredAlerts.filter(a => a.alertType === 'Panic Button').length;
+  const batteryCount = filteredAlerts.filter(a => a.alertType === 'Low Battery').length;
+  const offlineCount = filteredUsers.filter(u => u.status === 'Offline').length;
+
+  const pieData = [
+    { name: 'SOS', value: sosCount, color: '#ef4444' },
+    { name: 'Fall Detection', value: fallCount, color: '#f97316' },
+    { name: 'Panic Button', value: panicCount, color: '#eab308' },
+    { name: 'Low Battery', value: batteryCount, color: '#3b82f6' },
+    { name: 'Offline', value: offlineCount, color: '#6b7280' },
+  ];
+
+  const recentAlerts = [...filteredAlerts].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 8);
+
+  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const alertTrend = days.map(dayName => {
+    const dayAlerts = filteredAlerts.filter(a => {
+      const d = new Date(a.timestamp);
+      return days[d.getDay()] === dayName;
+    });
+    return {
+      day: dayName,
+      sos: dayAlerts.filter(a => a.alertType === 'SOS').length,
+      fall: dayAlerts.filter(a => a.alertType === 'Fall Detection').length,
+      panic: dayAlerts.filter(a => a.alertType === 'Panic Button').length,
+      battery: dayAlerts.filter(a => a.alertType === 'Low Battery').length,
+    };
+  });
 
   const grid = isDark ? '#1e293b' : '#e2e8f0';
   const axis = isDark ? '#64748b' : '#94a3b8';
@@ -80,7 +122,7 @@ export default function DashboardPage({ selectedDistrict }) {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
-        {STAT_CARDS.map((s, i) => {
+        {statCards.map((s, i) => {
           const Icon = s.icon;
           const isPos = s.trend.startsWith('+');
           return (
@@ -107,7 +149,7 @@ export default function DashboardPage({ selectedDistrict }) {
         <div className={`card p-5 lg:col-span-2 ${isDark ? 'dark' : 'light'}`}>
           <h3 className={`font-semibold text-sm mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>7-Day Alert Trends</h3>
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={ALERT_TREND}>
+            <AreaChart data={alertTrend}>
               <defs>
                 {Object.entries(CHART_COLORS).map(([k, c]) => (
                   <linearGradient key={k} id={`grad_${k}`} x1="0" y1="0" x2="0" y2="1">
@@ -134,14 +176,14 @@ export default function DashboardPage({ selectedDistrict }) {
           <h3 className={`font-semibold text-sm mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Alert Distribution</h3>
           <ResponsiveContainer width="100%" height={160}>
             <PieChart>
-              <Pie data={PIE_DATA} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
-                {PIE_DATA.map((e, i) => <Cell key={i} fill={e.color} />)}
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={45} outerRadius={70} dataKey="value" paddingAngle={3}>
+                {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
               </Pie>
               <Tooltip formatter={(v, n) => [v, n]} contentStyle={{ background: isDark ? '#1e293b' : '#fff', border: 'none', borderRadius: 8, fontSize: 11 }} />
             </PieChart>
           </ResponsiveContainer>
           <div className="space-y-1.5 mt-2">
-            {PIE_DATA.map(p => (
+            {pieData.map(p => (
               <div key={p.name} className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-sm" style={{ background: p.color }} />
@@ -157,22 +199,24 @@ export default function DashboardPage({ selectedDistrict }) {
       {/* Charts row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* District bar chart */}
-        <div className={`card p-5 ${isDark ? 'dark' : 'light'}`}>
-          <h3 className={`font-semibold text-sm mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Top Districts by Active Alerts</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={topDistricts} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke={grid} horizontal={false} />
-              <XAxis type="number" tick={{ fill: axis, fontSize: 10 }} axisLine={false} tickLine={false} />
-              <YAxis type="category" dataKey="name" tick={{ fill: axis, fontSize: 10 }} axisLine={false} tickLine={false} width={80} />
-              <Tooltip contentStyle={{ background: isDark ? '#1e293b' : '#fff', border: 'none', borderRadius: 8, fontSize: 11 }} />
-              <Bar dataKey="activeAlerts" name="Active Alerts" fill="#ef4444" radius={[0, 4, 4, 0]} />
-              <Bar dataKey="connectedWatches" name="Connected" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+        {!selectedDistrict && (
+          <div className={`card p-5 ${isDark ? 'dark' : 'light'}`}>
+            <h3 className={`font-semibold text-sm mb-4 ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Top Districts by Active Alerts</h3>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={topDistricts} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke={grid} horizontal={false} />
+                <XAxis type="number" tick={{ fill: axis, fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis type="category" dataKey="name" tick={{ fill: axis, fontSize: 10 }} axisLine={false} tickLine={false} width={80} />
+                <Tooltip contentStyle={{ background: isDark ? '#1e293b' : '#fff', border: 'none', borderRadius: 8, fontSize: 11 }} />
+                <Bar dataKey="activeAlerts" name="Active Alerts" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="connectedWatches" name="Connected" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
 
         {/* Recent alerts table */}
-        <div className={`card p-5 ${isDark ? 'dark' : 'light'}`}>
+        <div className={`card p-5 ${selectedDistrict ? 'lg:col-span-2' : ''} ${isDark ? 'dark' : 'light'}`}>
           <div className="flex items-center justify-between mb-4">
             <h3 className={`font-semibold text-sm ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>Recent Alerts</h3>
             <button className="text-xs text-brand-400 hover:text-brand-300 flex items-center gap-1">

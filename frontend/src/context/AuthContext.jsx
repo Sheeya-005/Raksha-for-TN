@@ -1,19 +1,16 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const AuthContext = createContext(null);
-
-const MOCK_ADMIN = {
-  id: 'USR0001',
-  name: 'Admin User',
-  email: 'admin@safetytamil.in',
-  phone: '+91 9876543210',
-  role: 'admin',
-  watchId: 'SW1001',
-  bloodGroup: 'O+',
-  address: 'Chennai, Tamil Nadu',
-  medicalInfo: 'No known allergies',
-  profilePhoto: null,
+const getApiUrl = () => {
+  const { protocol, hostname, port } = window.location;
+  if (port === '5173') {
+    return `${protocol}//${hostname}:5000/api`;
+  }
+  return `${protocol}//${hostname}${port ? ':' + port : ''}/api`;
 };
+const API_URL = getApiUrl();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -33,43 +30,95 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const login = async (email, password, remember) => {
-    // Mock authentication — accept any credentials
-    await new Promise(r => setTimeout(r, 1000));
-    const mockToken = `jwt_${Date.now()}_mock`;
-    const userData = { ...MOCK_ADMIN, email: email || MOCK_ADMIN.email };
-    setToken(mockToken);
-    setUser(userData);
-    if (remember) {
-      localStorage.setItem('safety_token', mockToken);
+  const login = async (email, password, role) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/login`, { email, password, role });
+      const { token: userToken, user: userData } = response.data;
+
+      setToken(userToken);
+      setUser(userData);
+      localStorage.setItem('safety_token', userToken);
       localStorage.setItem('safety_user', JSON.stringify(userData));
+      
+      // Check if location permission is already stored
+      const storedPerms = localStorage.getItem('safety_permissions');
+      setPermissionsGranted(storedPerms === 'true');
+      
+      return { success: true };
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      toast.error(msg);
+      throw new Error(msg);
     }
-    return { success: true };
   };
 
-  const signup = async (data) => {
-    await new Promise(r => setTimeout(r, 1200));
-    const mockToken = `jwt_${Date.now()}_mock`;
-    const userData = { ...MOCK_ADMIN, ...data, role: 'user' };
-    setToken(mockToken);
-    setUser(userData);
-    localStorage.setItem('safety_token', mockToken);
-    localStorage.setItem('safety_user', JSON.stringify(userData));
-    return { success: true };
+  const signup = async (formData) => {
+    try {
+      const response = await axios.post(`${API_URL}/auth/signup`, formData);
+      const { token: userToken, user: userData } = response.data;
+
+      setToken(userToken);
+      setUser(userData);
+      localStorage.setItem('safety_token', userToken);
+      localStorage.setItem('safety_user', JSON.stringify(userData));
+      
+      setPermissionsGranted(false);
+      localStorage.setItem('safety_permissions', 'false');
+
+      return { success: true };
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Signup failed. Please try again.';
+      toast.error(msg);
+      throw new Error(msg);
+    }
   };
 
   const logout = () => {
+    // If logged in, update status to Offline in backend first
+    if (user && user.role !== 'admin') {
+      axios.patch(`${API_URL}/users/${user.id}/status`, { status: 'Offline' }, {
+        headers: { Authorization: `Bearer ${token}` }
+      }).catch(err => console.log('Error updating status on logout:', err));
+    }
+
     setToken(null);
     setUser(null);
     setPermissionsGranted(false);
     localStorage.removeItem('safety_token');
     localStorage.removeItem('safety_user');
     localStorage.removeItem('safety_permissions');
+    toast.success('Logged out successfully.');
   };
 
   const grantPermissions = () => {
     setPermissionsGranted(true);
     localStorage.setItem('safety_permissions', 'true');
+  };
+
+  const updateLocation = async (lat, lng) => {
+    if (!user) return;
+    try {
+      await axios.patch(`${API_URL}/users/${user.id}/location`, { lat, lng });
+      const updatedUser = { ...user, lat, lng };
+      setUser(updatedUser);
+      localStorage.setItem('safety_user', JSON.stringify(updatedUser));
+    } catch (err) {
+      console.error('Error syncing location to backend:', err);
+    }
+  };
+
+  const updateStatus = async (status) => {
+    if (!user) return;
+    try {
+      await axios.patch(`${API_URL}/users/${user.id}/status`, { status });
+      const updatedUser = { ...user, availabilityStatus: status };
+      setUser(updatedUser);
+      localStorage.setItem('safety_user', JSON.stringify(updatedUser));
+      toast.success(`Availability updated to ${status}`);
+    } catch (err) {
+      console.error('Error syncing status to backend:', err);
+      toast.error('Failed to update availability status.');
+    }
   };
 
   const updateProfile = (updates) => {
@@ -82,7 +131,10 @@ export function AuthProvider({ children }) {
     <AuthContext.Provider value={{
       user, token, loading, permissionsGranted,
       login, signup, logout, grantPermissions, updateProfile,
+      updateLocation, updateStatus,
       isAdmin: user?.role === 'admin',
+      isPolice: user?.role === 'police',
+      isVolunteer: user?.role === 'volunteer'
     }}>
       {children}
     </AuthContext.Provider>
