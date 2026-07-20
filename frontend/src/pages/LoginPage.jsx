@@ -123,9 +123,6 @@ export default function LoginPage() {
       password = 'volunteer123';
     }
     setForm({ email, password });
-    
-    // Automatically pre-fill captcha input with current captcha text for developer convenience
-    setCaptchaInput(captchaText);
   };
 
   const handleQuickLogin = async (role) => {
@@ -175,7 +172,7 @@ export default function LoginPage() {
     }
 
     // CAPTCHA verification
-    if (captchaInput.trim().toLowerCase() !== captchaText.toLowerCase()) {
+    if (captchaInput.trim() !== captchaText) {
       toast.error('CAPTCHA verification failed. Please try again.');
       refreshCaptcha();
       return;
@@ -244,18 +241,12 @@ export default function LoginPage() {
                       </div>
                       <RoleIcon className="w-5 h-5 text-slate-500" />
                     </div>
-                    <div className="grid grid-cols-2 gap-2 mt-1">
+                    <div className="mt-1">
                       <button
                         onClick={() => selectRole(roleItem.id)}
-                        className="py-2 rounded-lg border border-slate-700 hover:border-slate-500 text-[10px] font-bold text-slate-300 hover:text-white transition-all cursor-pointer text-center"
+                        className="w-full py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-[10px] font-bold text-white transition-all cursor-pointer text-center"
                       >
-                        Enter Password
-                      </button>
-                      <button
-                        onClick={() => handleQuickLogin(roleItem.id)}
-                        className="py-2 rounded-lg bg-red-600 hover:bg-red-500 text-[10px] font-bold text-white shadow-md active:scale-98 transition-all cursor-pointer text-center"
-                      >
-                        Quick Auto-Login
+                        Proceed to Login
                       </button>
                     </div>
                   </div>
@@ -393,6 +384,13 @@ export default function LoginPage() {
               <p className="text-center text-xs text-slate-500">
                 Not a registered community volunteer?{' '}
                 <Link to="/volunteer/register" className="text-cyan-500 hover:underline font-bold">Register as Volunteer</Link>
+              </p>
+            )}
+
+            {selectedRole === 'police' && (
+              <p className="text-center text-xs text-slate-500">
+                Not a registered police officer?{' '}
+                <Link to="/police/register" className="text-blue-500 hover:underline font-bold">Register as Officer</Link>
               </p>
             )}
 

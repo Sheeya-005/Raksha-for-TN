@@ -8,6 +8,7 @@ import { SocketProvider } from './context/SocketContext';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import PoliceRegisterPage from './pages/PoliceRegisterPage';
 import PermissionsPage from './pages/PermissionsPage';
 import DistrictSelectionPage from './pages/DistrictSelectionPage';
 import BandSimulator from './pages/BandSimulator';
@@ -75,6 +76,7 @@ function AppRoutes() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/volunteer/register" element={<RegisterPage />} />
+        <Route path="/police/register" element={<PoliceRegisterPage />} />
         <Route path="/simulator" element={<BandSimulator />} />
         <Route path="/sos" element={<PhoneSosPage />} />
         

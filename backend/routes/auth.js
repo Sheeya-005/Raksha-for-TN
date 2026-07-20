@@ -60,12 +60,18 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/auth/signup (Volunteer signup)
+// POST /api/auth/signup (Volunteer/Police signup)
 router.post('/signup', async (req, res) => {
   try {
-    const { name, email, phone, password, gender, address } = req.body;
+    const { name, email, phone, password, gender, address, role, policeIdCardNumber, batchNumber } = req.body;
     if (!name || !email || !password || !phone) {
       return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const resolvedRole = role === 'police' ? 'police' : 'volunteer';
+
+    if (resolvedRole === 'police' && (!policeIdCardNumber || !batchNumber)) {
+      return res.status(400).json({ message: 'Police ID Card Number and Batch Number are required for Police registration' });
     }
 
     // Check if user already exists
@@ -83,19 +89,21 @@ router.post('/signup', async (req, res) => {
       email,
       phone,
       password: hashedPassword,
-      role: 'volunteer',
+      role: resolvedRole,
       gender,
       profilePhoto: null,
-      availabilityStatus: 'Available', // Volunteers start as Available
-      lat: 13.0827, // Default to Chennai center, tracking will update it
+      availabilityStatus: 'Available',
+      lat: 13.0827,
       lng: 80.2707,
-      accountStatus: 'active'
+      accountStatus: 'active',
+      policeIdCardNumber: resolvedRole === 'police' ? policeIdCardNumber : null,
+      batchNumber: resolvedRole === 'police' ? batchNumber : null
     });
 
     const token = jwt.sign({ id: newUser.id, email: newUser.email, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
     // Log the signup
-    await dbStore.createLog(newUser.id, 'USER_SIGNUP', `Volunteer ${newUser.name} registered.`);
+    await dbStore.createLog(newUser.id, 'USER_SIGNUP', `${resolvedRole.toUpperCase()} ${newUser.name} registered.`);
 
     res.status(201).json({
       token,

@@ -56,6 +56,16 @@ export const User = sequelize.define('User', {
     type: DataTypes.ENUM('active', 'suspended'),
     defaultValue: 'active',
   },
+  policeIdCardNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: null,
+  },
+  batchNumber: {
+    type: DataTypes.STRING,
+    allowNull: true,
+    defaultValue: null,
+  },
 }, {
   timestamps: true,
   tableName: 'users',
