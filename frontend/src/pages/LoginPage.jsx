@@ -360,11 +360,11 @@ export default function LoginPage() {
                   </button>
                 </div>
 
-                <input
+                 <input
                   type="text"
                   required
                   placeholder="Enter CAPTCHA text"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-800 bg-[#0E1322] focus:outline-none focus:ring-1 focus:ring-red-500/50 uppercase font-mono tracking-widest text-center"
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-800 bg-[#0E1322] focus:outline-none focus:ring-1 focus:ring-red-500/50 font-mono tracking-widest text-center"
                   value={captchaInput}
                   onChange={e => setCaptchaInput(e.target.value)}
                 />
