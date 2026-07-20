@@ -71,8 +71,8 @@ export default function RegisterPage() {
 
       const res = await signup(payload);
       if (res.success) {
-        toast.success('Registration successful! Location permission is now required.');
-        navigate('/permissions');
+        toast.success('Registration successful! Please log in with your credentials.');
+        navigate('/login');
       }
     } catch (err) {
       // toast.error is already handled in AuthContext

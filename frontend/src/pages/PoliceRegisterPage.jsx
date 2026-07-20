@@ -66,8 +66,8 @@ export default function PoliceRegisterPage() {
 
       const res = await signup(payload);
       if (res.success) {
-        toast.success('Registration successful! Location permission is now required.');
-        navigate('/permissions');
+        toast.success('Registration successful! Please log in with your credentials.');
+        navigate('/login');
       }
     } catch (err) {
       console.error(err);

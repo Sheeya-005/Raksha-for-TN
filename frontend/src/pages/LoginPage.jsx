@@ -14,143 +14,10 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // CAPTCHA State
-  const canvasRef = useRef(null);
-  const [captchaText, setCaptchaText] = useState('');
-  const [captchaInput, setCaptchaInput] = useState('');
-
-  // Generate random alphanumeric text for captcha
-  const generateCaptchaText = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'; // omit ambiguous chars
-    let result = '';
-    for (let i = 0; i < 6; i++) {
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
-  };
-
-  const drawCaptcha = (text) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Fill background
-    ctx.fillStyle = '#111827';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw grid noise lines
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-    ctx.lineWidth = 1;
-    for (let i = 0; i < canvas.width; i += 15) {
-      ctx.beginPath();
-      ctx.moveTo(i, 0);
-      ctx.lineTo(i, canvas.height);
-      ctx.stroke();
-    }
-    for (let j = 0; j < canvas.height; j += 15) {
-      ctx.beginPath();
-      ctx.moveTo(0, j);
-      ctx.lineTo(canvas.width, j);
-      ctx.stroke();
-    }
-
-    // Write captcha text characters
-    ctx.font = 'bold 22px Courier New';
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      const x = 20 + i * 22;
-      const y = canvas.height / 2 + (Math.random() - 0.5) * 8;
-      
-      ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate((Math.random() - 0.5) * 0.4); // random rotation
-      
-      // Random color for text
-      const colors = ['#f87171', '#60a5fa', '#34d399', '#fbbf24', '#c084fc', '#2dd4bf'];
-      ctx.fillStyle = colors[Math.floor(Math.random() * colors.length)];
-      
-      ctx.fillText(char, 0, 0);
-      ctx.restore();
-    }
-
-    // Draw overlapping line noises
-    ctx.strokeStyle = 'rgba(239, 68, 68, 0.2)';
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 4; i++) {
-      ctx.beginPath();
-      ctx.moveTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.lineTo(Math.random() * canvas.width, Math.random() * canvas.height);
-      ctx.stroke();
-    }
-  };
-
-  const refreshCaptcha = () => {
-    const text = generateCaptchaText();
-    setCaptchaText(text);
-    setCaptchaInput('');
-    // Delay canvas draw slightly to ensure DOM has updated if moving steps
-    setTimeout(() => drawCaptcha(text), 50);
-  };
-
-  // Draw captcha when step transitions or captchaText updates
-  useEffect(() => {
-    if (step === 'credentials' && captchaText) {
-      const timer = setTimeout(() => {
-        drawCaptcha(captchaText);
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [step, captchaText]);
-
   const selectRole = (role) => {
     setSelectedRole(role);
     setStep('credentials');
     setForm({ email: '', password: '' });
-    refreshCaptcha();
-  };
-
-  const handleQuickLogin = async (role) => {
-    setSelectedRole(role);
-    setStep('credentials');
-    
-    let email = '';
-    let password = '';
-    if (role === 'admin') {
-      email = 'admin@safetytamil.in';
-      password = 'admin123';
-    } else if (role === 'police') {
-      email = 'police@safetytamil.in';
-      password = 'police123';
-    } else {
-      email = 'volunteer@safetytamil.in';
-      password = 'volunteer123';
-    }
-    setForm({ email, password });
-    
-    // Auto-generate, sync, and bypass captcha verification in state
-    const tempCaptcha = generateCaptchaText();
-    setCaptchaText(tempCaptcha);
-    setCaptchaInput(tempCaptcha);
-
-    setLoading(true);
-    try {
-      const res = await login(email, password, role);
-      if (res.success) {
-        toast.success(`Welcome back! Authenticated as ${role.toUpperCase()}`);
-        navigate('/select-district');
-      }
-    } catch (err) {
-      console.error(err);
-      refreshCaptcha();
-    } finally {
-      setLoading(false);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -161,23 +28,15 @@ export default function LoginPage() {
       return;
     }
 
-    // CAPTCHA verification
-    if (captchaInput.trim() !== captchaText) {
-      toast.error('CAPTCHA verification failed. Please try again.');
-      refreshCaptcha();
-      return;
-    }
-
     setLoading(true);
     try {
       const res = await login(form.email, form.password, selectedRole);
       if (res.success) {
         toast.success(`Welcome back! Authenticated as ${selectedRole.toUpperCase()}`);
-        navigate('/select-district'); // intermediate district selector requested
+        navigate('/select-district');
       }
     } catch (err) {
       console.error(err);
-      refreshCaptcha();
     } finally {
       setLoading(false);
     }
@@ -338,37 +197,7 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* CAPTCHA SECTION */}
-              <div className="pt-2 border-t border-slate-850 space-y-3">
-                <label className="block text-[10px] uppercase font-bold tracking-wider text-slate-400">Security Verification CAPTCHA</label>
-                
-                <div className="flex items-center gap-3">
-                  {/* Captcha Canvas */}
-                  <canvas 
-                    ref={canvasRef} 
-                    width={150} 
-                    height={40} 
-                    className="rounded-lg border border-slate-850"
-                  />
-                  <button 
-                    type="button" 
-                    onClick={refreshCaptcha}
-                    className="p-2 rounded-lg bg-slate-900 border border-slate-850 text-slate-400 hover:text-white transition-colors cursor-pointer"
-                    title="Refresh CAPTCHA"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                  </button>
-                </div>
 
-                 <input
-                  type="text"
-                  required
-                  placeholder="Enter CAPTCHA text"
-                  className="w-full px-3 py-2 text-xs rounded-xl border border-slate-800 bg-[#0E1322] focus:outline-none focus:ring-1 focus:ring-red-500/50 font-mono tracking-widest text-center"
-                  value={captchaInput}
-                  onChange={e => setCaptchaInput(e.target.value)}
-                />
-              </div>
 
               <button
                 type="submit"

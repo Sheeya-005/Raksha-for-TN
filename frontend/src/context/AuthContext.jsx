@@ -54,17 +54,7 @@ export function AuthProvider({ children }) {
 
   const signup = async (formData) => {
     try {
-      const response = await axios.post(`${API_URL}/auth/signup`, formData);
-      const { token: userToken, user: userData } = response.data;
-
-      setToken(userToken);
-      setUser(userData);
-      localStorage.setItem('safety_token', userToken);
-      localStorage.setItem('safety_user', JSON.stringify(userData));
-      
-      setPermissionsGranted(false);
-      localStorage.setItem('safety_permissions', 'false');
-
+      await axios.post(`${API_URL}/auth/signup`, formData);
       return { success: true };
     } catch (err) {
       const msg = err.response?.data?.message || 'Signup failed. Please try again.';
