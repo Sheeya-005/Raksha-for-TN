@@ -32,10 +32,15 @@ function ProtectedRoute({ children, allowedRole }) {
   }
 
   if (!user) return <Navigate to="/login" replace />;
-  if (!permissionsGranted) return <Navigate to="/permissions" replace />;
+  
+  if (user.role !== 'admin' && !permissionsGranted) {
+    if (window.location.pathname !== '/permissions') {
+      return <Navigate to="/permissions" replace />;
+    }
+  }
   
   // Ensure intermediate district selection is completed
-  if (!user.selectedDistrict && window.location.pathname !== '/select-district') {
+  if (!user.selectedDistrict && window.location.pathname !== '/select-district' && window.location.pathname !== '/permissions') {
     return <Navigate to="/select-district" replace />;
   }
   

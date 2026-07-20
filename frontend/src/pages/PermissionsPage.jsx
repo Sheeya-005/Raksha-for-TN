@@ -38,7 +38,12 @@ export default function PermissionsPage() {
         console.warn('Geolocation error:', error);
         setGpsState('denied');
         setLoading(false);
-        toast.error('Location Access Denied. Please enable GPS permissions.');
+        toast.error('Location Access Denied. Enabling simulation fallback mode...');
+        
+        // Auto-bypass after 1.5 seconds to prevent getting stuck
+        setTimeout(() => {
+          simulateGpsBypass();
+        }, 1500);
       }
     );
   };
