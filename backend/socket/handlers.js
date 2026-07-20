@@ -77,7 +77,7 @@ export function setupSocketHandlers(io) {
 
     // Smartwatch/Simulator SOS Alert Trigger
     socket.on('smartwatch:sos', async (data) => {
-      const { victimName, victimPhone, lat, lng, victimId } = data;
+      const { victimName, victimPhone, lat, lng, victimId, message } = data;
       console.log(`[EMERGENCY] SOS received via Socket. Location: (${lat}, ${lng})`);
 
       try {
@@ -126,6 +126,7 @@ export function setupSocketHandlers(io) {
           lat: Number(lat),
           lng: Number(lng),
           status: 'SOS Triggered',
+          message: message || "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)",
           assignedResponder: selectedResponder ? selectedResponder.id : null,
           responderType: selectedType,
           responderLat: selectedResponder ? selectedResponder.lat : null,

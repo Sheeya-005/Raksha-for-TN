@@ -5,7 +5,7 @@ import 'leaflet/dist/leaflet.css';
 import axios from 'axios';
 import { 
   Users, Radio, Activity, Navigation, CheckCircle, Clock, MapPin, 
-  Phone, LogOut, User, Bell, Volume2, Home, HeartPulse
+  Phone, LogOut, User, Bell, Volume2, Home, HeartPulse, AlertTriangle
 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
@@ -89,6 +89,7 @@ export default function VolunteerDashboard() {
   const [callListened, setCallListened] = useState(false);
 
   const trackerInterval = useRef(null);
+  const activeCaseIdRef = useRef(null);
 
   const getApiUrl = () => {
     const { protocol, hostname, port } = window.location;
@@ -140,9 +141,15 @@ export default function VolunteerDashboard() {
 
   useEffect(() => {
     if (assignedAlert) {
+      if (activeCaseIdRef.current !== assignedAlert.alert.id) {
+        activeCaseIdRef.current = assignedAlert.alert.id;
+        setIncomingCall(true);
+        setCallListened(false);
+      }
       setActiveCase(assignedAlert.alert);
-      setIncomingCall(true);
-      setCallListened(false);
+    } else {
+      setActiveCase(null);
+      activeCaseIdRef.current = null;
     }
   }, [assignedAlert]);
 
@@ -160,7 +167,8 @@ export default function VolunteerDashboard() {
 
   const acceptCall = () => {
     setCallListened(true);
-    const msg = new SpeechSynthesisUtterance("A woman is in an emergency. Her location has been sent to your mailbox. Please respond immediately.");
+    const dangerMsg = activeCase?.message || "I am in danger!";
+    const msg = new SpeechSynthesisUtterance(`A woman is in an emergency. Her message says, "${dangerMsg}". Please respond immediately.`);
     window.speechSynthesis?.speak(msg);
   };
 
@@ -364,6 +372,9 @@ export default function VolunteerDashboard() {
                       <div className="text-sm font-bold text-white">Victim: {activeCase.victimName}</div>
                       <div>Contact: <b>{activeCase.victimPhone}</b></div>
                       <div className="text-slate-400">Location Lat: {activeCase.lat.toFixed(4)} · Lng: {activeCase.lng.toFixed(4)}</div>
+                      <div className="mt-2 p-2 rounded bg-red-500/10 border border-red-500/20 text-red-400 font-semibold tracking-wide">
+                        ⚠️ Msg: "{activeCase.message || 'I am in danger!'}"
+                      </div>
                     </div>
 
                     <div className="space-y-2">
@@ -545,8 +556,13 @@ export default function VolunteerDashboard() {
             <span className="text-[10px] uppercase font-bold tracking-wider text-red-500">🚨 Automated Safety Band Voice Alert Call</span>
             <h3 className="text-lg font-extrabold mt-1 mb-4">INCOMING EMERGENCY CALL</h3>
 
-            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs italic leading-relaxed mb-6">
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs italic leading-relaxed mb-4">
               "A woman is in an emergency. Her location has been sent to your mailbox. Please respond immediately."
+            </div>
+
+            <div className="p-3 mb-6 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2">
+              <AlertTriangle className="w-4 h-4 animate-bounce" />
+              <span>Message: "{activeCase?.message || 'I am in danger!'}"</span>
             </div>
 
             <div className="flex gap-3">

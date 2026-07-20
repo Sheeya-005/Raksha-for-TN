@@ -35,4 +35,6 @@ export async function connectDB() {
   // Connect via Sequelize and synchronize schemas
   await sequelize.authenticate();
   console.log(`✅ MySQL connected: ${host}:${port}/${database}`);
+  await sequelize.sync({ alter: true });
+  console.log('✅ MySQL tables synchronized successfully.');
 }

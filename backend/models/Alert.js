@@ -31,6 +31,10 @@ export const Alert = sequelize.define('Alert', {
     type: DataTypes.STRING,
     defaultValue: 'SOS Triggered',
   },
+  message: {
+    type: DataTypes.STRING,
+    defaultValue: "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)",
+  },
   accuracy: {
     type: DataTypes.DOUBLE,
     defaultValue: null,

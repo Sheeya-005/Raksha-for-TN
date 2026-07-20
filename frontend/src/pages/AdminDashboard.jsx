@@ -418,6 +418,7 @@ export default function AdminDashboard() {
                                   )}
                                   <p><span className="text-slate-500 font-medium">SOS Time:</span> <span className="text-white">{new Date(a.triggerTime || a.timestamp).toLocaleTimeString()} ({timeAgo(a.triggerTime)})</span></p>
                                   <p><span className="text-slate-500 font-medium">District:</span> <span className="text-orange-400 font-semibold">{getDistrictName(a)}</span></p>
+                                  <p><span className="text-slate-500 font-medium">Message:</span> <span className="text-red-400 font-bold">{a.message || 'I am in danger!'}</span></p>
                                 </div>
 
                                 {isAlertActive(a) && (
@@ -474,6 +475,7 @@ export default function AdminDashboard() {
                       </div>
                       <div className="font-bold text-white">{alert.victimName}</div>
                       <div className="text-[10px] text-slate-500">Location Lat: {alert.lat.toFixed(4)}</div>
+                      <div className="mt-1 font-semibold text-red-400 text-[10px]">{alert.message || 'I am in danger!'}</div>
                     </div>
                   ))}
                 </div>
@@ -598,6 +600,7 @@ export default function AdminDashboard() {
                             )}
                             <p><span className="text-slate-500 font-medium">SOS Time:</span> <span className="text-white">{new Date(a.triggerTime || a.timestamp).toLocaleTimeString()} ({timeAgo(a.triggerTime)})</span></p>
                             <p><span className="text-slate-500 font-medium">District:</span> <span className="text-orange-400 font-semibold">{getDistrictName(a)}</span></p>
+                            <p><span className="text-slate-500 font-medium">Message:</span> <span className="text-red-400 font-bold">{a.message || 'I am in danger!'}</span></p>
                           </div>
 
                           {isAlertActive(a) && (
@@ -657,6 +660,7 @@ export default function AdminDashboard() {
                   <tr className="bg-slate-900 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
                     <th className="px-4 py-3">Alert ID</th>
                     <th className="px-4 py-3">Victim Name</th>
+                    <th className="px-4 py-3">Victim Message</th>
                     <th className="px-4 py-3">Trigger Coordinates</th>
                     <th className="px-4 py-3">Trigger Time</th>
                     <th className="px-4 py-3">Assigned First Responder</th>
@@ -669,6 +673,7 @@ export default function AdminDashboard() {
                     <tr key={a.id} className="border-b border-slate-900 text-slate-300">
                       <td className="px-4 py-3 font-mono text-red-500 font-bold">{a.id}</td>
                       <td className="px-4 py-3 font-bold">{a.victimName}</td>
+                      <td className="px-4 py-3 font-semibold text-red-400">{a.message || 'I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)'}</td>
                       <td className="px-4 py-3 font-mono">{a.lat.toFixed(4)}, {a.lng.toFixed(4)}</td>
                       <td className="px-4 py-3">{new Date(a.triggerTime).toLocaleTimeString()}</td>
                       <td className="px-4 py-3 capitalize font-semibold">{a.assignedResponder ? `${a.responderType}: ${users.find(u => u.id === a.assignedResponder)?.name || a.assignedResponder}` : 'Unassigned'}</td>

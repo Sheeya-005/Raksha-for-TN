@@ -178,7 +178,8 @@ export default function PhoneSosPage() {
         longitude: lng,
         accuracy: accuracy,
         timestamp: new Date().toISOString(),
-        emergencyStatus: 'SOS_TRIGGERED'
+        emergencyStatus: 'SOS_TRIGGERED',
+        message: "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)"
       };
 
       const res = await axios.post(`http://${window.location.hostname}:5000/api/emergency/sos`, payload, {

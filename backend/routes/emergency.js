@@ -95,7 +95,7 @@ function authenticateToken(req, res, next) {
 // POST /api/emergency/sos - Phone triggers SOS emergency alert
 router.post('/sos', authenticateToken, async (req, res) => {
   try {
-    const { emergencyId, victimId, latitude, longitude, accuracy, timestamp, emergencyStatus } = req.body;
+    const { emergencyId, victimId, latitude, longitude, accuracy, timestamp, emergencyStatus, message } = req.body;
 
     if (latitude === undefined || longitude === undefined) {
       return res.status(400).json({ message: 'Coordinates are required to trigger SOS' });
@@ -157,6 +157,7 @@ router.post('/sos', authenticateToken, async (req, res) => {
       accuracy: accuracy !== undefined ? Number(accuracy) : null,
       district: districtName,
       status: resolvedStatus,
+      message: message || "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)",
       assignedResponder: selectedResponder ? selectedResponder.id : null,
       responderType: selectedType,
       responderLat: selectedResponder ? selectedResponder.lat : null,

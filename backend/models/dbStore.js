@@ -78,6 +78,7 @@ const defaultAlerts = [
     lat: 13.0720,
     lng: 80.2520,
     status: 'Resolved',
+    message: "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)",
     assignedResponder: 'USR_0002',
     responderType: 'police',
     responderLat: 13.0835,
@@ -220,10 +221,11 @@ export const dbStore = {
   },
 
   createAlert: async (alertData) => {
-    const id = `ALT_${Date.now()}`;
+    const id = alertData.id || `ALT_${Date.now()}`;
     const newAlert = {
       ...alertData,
       id,
+      message: alertData.message || "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)",
       triggerTime: new Date(),
       timeline: [
         { status: 'SOS Triggered', timestamp: new Date(), description: 'SOS emergency activated' }

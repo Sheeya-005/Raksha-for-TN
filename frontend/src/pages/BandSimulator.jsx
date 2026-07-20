@@ -100,7 +100,8 @@ export default function BandSimulator() {
       lat,
       lng,
       battery,
-      heartRate: heartRate + 40
+      heartRate: heartRate + 40,
+      message: "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)"
     };
 
     // Emit SOS WebSocket event
