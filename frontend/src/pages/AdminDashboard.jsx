@@ -51,7 +51,7 @@ function createIconHtml(color) {
 }
 
 export default function AdminDashboard() {
-  const { logout, user } = useAuth();
+  const { logout, user, updateProfile } = useAuth();
   const { socket, liveAlerts, setLiveAlerts, liveResponders } = useSocket();
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -61,37 +61,50 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview'); // overview, live-map, active-emergencies, district-analytics, responders-police, responders-volunteers, history, logs
 
   // Settings Form state
+  const [newUsername, setNewUsername] = useState(user?.email || '');
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [updatingCredentials, setUpdatingCredentials] = useState(false);
 
-  const handlePasswordChange = async (e) => {
+  useEffect(() => {
+    if (user) {
+      setNewUsername(user.email);
+    }
+  }, [user]);
+
+  const handleCredentialsChange = async (e) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
+    if (newPassword && newPassword !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
     }
-    if (newPassword.length < 6) {
+    if (newPassword && newPassword.length < 6) {
       toast.error("Password must be at least 6 characters");
       return;
     }
+    if (!newUsername) {
+      toast.error("Username cannot be empty");
+      return;
+    }
 
-    setUpdatingPassword(true);
+    setUpdatingCredentials(true);
     try {
-      await axios.post(`${getApiUrl()}/users/change-password`, {
+      await axios.post(`${getApiUrl()}/users/change-credentials`, {
         userId: user.id,
         oldPassword,
-        newPassword
+        newUsername,
+        newPassword: newPassword || undefined
       });
-      toast.success("Security password changed successfully");
+      toast.success("Security credentials updated successfully");
+      updateProfile({ email: newUsername });
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to update password");
+      toast.error(err.response?.data?.message || "Failed to update credentials");
     } finally {
-      setUpdatingPassword(false);
+      setUpdatingCredentials(false);
     }
   };
 
@@ -992,13 +1005,13 @@ export default function AdminDashboard() {
             
             <div className="p-6 border border-slate-900 bg-slate-950/40 rounded-xl space-y-5 text-xs">
               <div className="border-b border-slate-900 pb-3">
-                <h4 className="font-extrabold text-white text-sm">Change Security Password</h4>
-                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Change state command portal password</p>
+                <h4 className="font-extrabold text-white text-sm">Update Security Credentials</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Change state command portal username & password</p>
               </div>
 
-              <form onSubmit={handlePasswordChange} className="space-y-4">
+              <form onSubmit={handleCredentialsChange} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase text-slate-400 block">Current Password</label>
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block">Current Password (Required)</label>
                   <input
                     type="password"
                     required
@@ -1010,10 +1023,21 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase text-slate-400 block">New Password</label>
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block">New Admin Username</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="admin"
+                    value={newUsername}
+                    onChange={e => setNewUsername(e.target.value)}
+                    className="w-full bg-[#0E1322] border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-red-500/50"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block">New Password (Optional)</label>
                   <input
                     type="password"
-                    required
                     placeholder="••••••••"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}
@@ -1025,7 +1049,6 @@ export default function AdminDashboard() {
                   <label className="text-[10px] font-bold uppercase text-slate-400 block">Confirm New Password</label>
                   <input
                     type="password"
-                    required
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
@@ -1035,10 +1058,10 @@ export default function AdminDashboard() {
 
                 <button
                   type="submit"
-                  disabled={updatingPassword}
+                  disabled={updatingCredentials}
                   className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg transition-all cursor-pointer text-center"
                 >
-                  {updatingPassword ? 'Changing Password...' : 'Change Password'}
+                  {updatingCredentials ? 'Saving Credentials...' : 'Save Credentials'}
                 </button>
               </form>
             </div>

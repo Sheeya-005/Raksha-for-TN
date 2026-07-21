@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Shield, Lock, Mail, Loader2, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Eye, EyeOff, Shield, Lock, User, Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -16,7 +16,7 @@ export default function AdminLoginPage() {
     e.preventDefault();
 
     if (!form.email || !form.password) {
-      toast.error('Please enter email and password.');
+      toast.error('Please enter username and password.');
       return;
     }
 
@@ -54,15 +54,15 @@ export default function AdminLoginPage() {
         <div className="bg-slate-900/40 p-6 rounded-2xl border border-slate-900 backdrop-blur-sm space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             
-            {/* Email */}
+            {/* Username */}
             <div>
-              <label className="block text-[10px] uppercase font-bold tracking-wider mb-1.5 text-slate-400">Admin Username / Email</label>
+              <label className="block text-[10px] uppercase font-bold tracking-wider mb-1.5 text-slate-400">Admin Username</label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                 <input
                   type="text"
                   required
-                  placeholder="admin or admin@safetytamil.in"
+                  placeholder="admin"
                   className="w-full pl-9 pr-3 py-2.5 text-sm rounded-xl border border-slate-800 bg-[#0E1322] focus:outline-none focus:ring-2 focus:ring-red-500/30 text-white"
                   value={form.email}
                   onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
@@ -105,16 +105,14 @@ export default function AdminLoginPage() {
             </button>
           </form>
 
-          <div className="text-center py-1 border-t border-slate-850 pt-4 space-y-1.5">
+          <div className="text-center py-1 border-t border-slate-850 pt-4">
             <button
               type="button"
               onClick={() => setForm({ email: 'admin', password: 'admin@123' })}
-              className="w-full mb-3 py-2 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-white bg-red-950/5 hover:bg-red-950/10 transition-all cursor-pointer text-center"
+              className="w-full py-2 border border-red-500/20 hover:border-red-500/40 rounded-xl text-[10px] font-bold uppercase tracking-wider text-red-400 hover:text-white bg-red-950/5 hover:bg-red-950/10 transition-all cursor-pointer text-center"
             >
               Autofill Seeded Admin Demo
             </button>
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">New operational officer?</p>
-            <Link to="/admin/register" className="text-red-400 hover:underline font-bold text-xs">Register New Admin Profile</Link>
           </div>
         </div>
 

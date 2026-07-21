@@ -133,33 +133,55 @@ router.patch('/:id/account-status', async (req, res) => {
   }
 });
 
-// POST /api/users/change-password - Change user password
-router.post('/change-password', async (req, res) => {
+// POST /api/users/change-credentials - Change user username and/or password
+router.post('/change-credentials', async (req, res) => {
   try {
-    const { userId, oldPassword, newPassword } = req.body;
-    if (!userId || !oldPassword || !newPassword) {
-      return res.status(400).json({ message: 'All fields are required' });
+    const { userId, oldPassword, newUsername, newPassword } = req.body;
+    if (!userId || !oldPassword) {
+      return res.status(400).json({ message: 'User ID and current password are required' });
     }
 
     const user = await dbStore.getUserById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    // Compare old password
+    // Compare current password
     const isMatch = await bcrypt.compare(oldPassword, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Incorrect old password' });
+      return res.status(400).json({ message: 'Incorrect current password' });
     }
 
-    // Hash new password
-    const hashed = await bcrypt.hash(newPassword, 12);
-    await dbStore.updateUser(userId, { password: hashed });
+    const updates = {};
+    if (newUsername) {
+      // Ensure new username is not already taken
+      const existing = await dbStore.getUserByEmail(newUsername);
+      if (existing && existing.id !== userId) {
+        return res.status(400).json({ message: 'Username is already taken' });
+      }
+      updates.email = newUsername.toLowerCase();
+    }
 
-    await dbStore.createLog(userId, 'PASSWORD_CHANGE', `User ${user.name} changed their security password.`);
+    if (newPassword) {
+      updates.password = await bcrypt.hash(newPassword, 12);
+    }
 
-    res.json({ success: true, message: 'Password updated successfully' });
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'No changes provided' });
+    }
+
+    await dbStore.updateUser(userId, updates);
+    await dbStore.createLog(userId, 'CREDENTIALS_CHANGE', `User ${user.name} updated their security credentials.`);
+
+    res.json({
+      success: true,
+      message: 'Credentials updated successfully',
+      updatedUser: {
+        ...user,
+        email: updates.email || user.email
+      }
+    });
   } catch (err) {
-    console.error('Password change error:', err);
-    res.status(500).json({ message: 'Server error changing password' });
+    console.error('Credentials change error:', err);
+    res.status(500).json({ message: 'Server error updating credentials' });
   }
 });
 
