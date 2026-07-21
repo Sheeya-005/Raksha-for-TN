@@ -68,7 +68,12 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const resolvedRole = role === 'police' ? 'police' : 'volunteer';
+    let resolvedRole = 'volunteer';
+    if (role === 'police') {
+      resolvedRole = 'police';
+    } else if (role === 'admin') {
+      resolvedRole = 'admin';
+    }
 
     if (resolvedRole === 'police' && (!policeIdCardNumber || !batchNumber)) {
       return res.status(400).json({ message: 'Police ID Card Number and Batch Number are required for Police registration' });

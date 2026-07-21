@@ -34,6 +34,9 @@ const io = new Server(httpServer, {
 app.use(cors());
 app.use(express.json());
 
+// Set socket.io instance
+app.set('io', io);
+
 // Health check
 app.get('/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 

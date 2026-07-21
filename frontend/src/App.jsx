@@ -9,6 +9,8 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PoliceRegisterPage from './pages/PoliceRegisterPage';
+import AdminLoginPage from './pages/AdminLoginPage';
+import AdminRegisterPage from './pages/AdminRegisterPage';
 import PermissionsPage from './pages/PermissionsPage';
 import DistrictSelectionPage from './pages/DistrictSelectionPage';
 import BandSimulator from './pages/BandSimulator';
@@ -46,8 +48,35 @@ function ProtectedRoute({ children, allowedRole }) {
   }
   
   if (allowedRole && user.role !== allowedRole) {
-    // Role mismatch
+    // Role mismatch: redirect to respective dashboard if valid role
+    if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === 'police') return <Navigate to="/police/dashboard" replace />;
+    if (user.role === 'volunteer') return <Navigate to="/volunteer/dashboard" replace />;
     return <Navigate to="/" replace />;
+  }
+
+  return children;
+}
+
+function PublicRoute({ children }) {
+  const { user, loading } = useAuth();
+  const { isDark } = useTheme();
+
+  if (loading) {
+    return (
+      <div className={`min-h-screen flex items-center justify-center ${isDark ? 'bg-slate-950 text-slate-400' : 'bg-slate-50 text-slate-500'}`}>
+        <div className="text-center">
+          <div className="w-10 h-10 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-xs font-bold uppercase tracking-wider">Syncing safety protocols…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (user) {
+    if (user.role === 'admin') return <Navigate to="/admin/dashboard" replace />;
+    if (user.role === 'police') return <Navigate to="/police/dashboard" replace />;
+    if (user.role === 'volunteer') return <Navigate to="/volunteer/dashboard" replace />;
   }
 
   return children;
@@ -74,9 +103,31 @@ function AppRoutes() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/volunteer/register" element={<RegisterPage />} />
-        <Route path="/police/register" element={<PoliceRegisterPage />} />
+        <Route path="/login" element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        } />
+        <Route path="/volunteer/register" element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        } />
+        <Route path="/police/register" element={
+          <PublicRoute>
+            <PoliceRegisterPage />
+          </PublicRoute>
+        } />
+        <Route path="/admin/login" element={
+          <PublicRoute>
+            <AdminLoginPage />
+          </PublicRoute>
+        } />
+        <Route path="/admin/register" element={
+          <PublicRoute>
+            <AdminRegisterPage />
+          </PublicRoute>
+        } />
         <Route path="/simulator" element={<BandSimulator />} />
         <Route path="/sos" element={<PhoneSosPage />} />
         

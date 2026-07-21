@@ -1,4 +1,5 @@
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { dbStore } from '../models/dbStore.js';
 
 const router = express.Router();
@@ -108,6 +109,57 @@ router.patch('/:id/status', async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: 'Server error updating status' });
+  }
+});
+
+// PATCH /api/users/:id/account-status - Suspend or Activate user account (Admins only)
+router.patch('/:id/account-status', async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (status !== 'active' && status !== 'suspended') {
+      return res.status(400).json({ message: 'Invalid account status' });
+    }
+    const updated = await dbStore.updateUser(req.params.id, { accountStatus: status });
+    if (!updated) return res.status(404).json({ message: 'User not found' });
+
+    await dbStore.createLog(updated.id, 'ACCOUNT_STATUS_CHANGE', `Account status of ${updated.role.toUpperCase()} ${updated.name} updated to: ${status}`);
+
+    res.json({
+      id: updated.id,
+      accountStatus: updated.accountStatus
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error updating account status' });
+  }
+});
+
+// POST /api/users/change-password - Change user password
+router.post('/change-password', async (req, res) => {
+  try {
+    const { userId, oldPassword, newPassword } = req.body;
+    if (!userId || !oldPassword || !newPassword) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    const user = await dbStore.getUserById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Compare old password
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Incorrect old password' });
+    }
+
+    // Hash new password
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await dbStore.updateUser(userId, { password: hashed });
+
+    await dbStore.createLog(userId, 'PASSWORD_CHANGE', `User ${user.name} changed their security password.`);
+
+    res.json({ success: true, message: 'Password updated successfully' });
+  } catch (err) {
+    console.error('Password change error:', err);
+    res.status(500).json({ message: 'Server error changing password' });
   }
 });
 

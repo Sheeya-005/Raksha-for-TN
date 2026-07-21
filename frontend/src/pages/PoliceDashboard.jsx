@@ -167,6 +167,15 @@ export default function PoliceDashboard() {
     }
   }, [assignedAlert]);
 
+  useEffect(() => {
+    if (activeCase) {
+      const updated = liveAlerts.find(a => a.id === activeCase.id);
+      if (updated) {
+        setActiveCase(updated);
+      }
+    }
+  }, [liveAlerts]);
+
   // Simulated coordinate movement
   const handleLocationSimulation = (simLat, simLng) => {
     setLat(simLat);

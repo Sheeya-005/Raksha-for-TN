@@ -40,6 +40,30 @@ const responderIcon = L.divIcon({
   iconAnchor: [7, 7]
 });
 
+const getApiUrl = () => {
+  const { protocol, hostname, port } = window.location;
+  if (port === '5173') {
+    return `${protocol}//${hostname}:5000/api`;
+  }
+  return `${protocol}//${hostname}${port ? ':' + port : ''}/api`;
+};
+const API_URL = getApiUrl();
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+  const toRad = (value) => (value * Math.PI) / 180;
+  const R = 6371; // Radius of the Earth in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default function PhoneSosPage() {
   const { user, token, login, logout } = useAuth();
   const { socket, connected } = useSocket();
@@ -123,12 +147,17 @@ export default function PhoneSosPage() {
       
       // Look up and attach responder details if assigned
       if (data.assignedResponder) {
+        const distance = (lat !== null && lng !== null && data.responderLat !== null && data.responderLng !== null)
+          ? calculateDistance(lat, lng, Number(data.responderLat), Number(data.responderLng))
+          : undefined;
+
         setAssignedResponder({
           id: data.assignedResponder,
           type: data.responderType,
           lat: data.responderLat,
           lng: data.responderLng,
-          status: data.status
+          status: data.status,
+          distanceKm: distance
         });
       } else {
         setAssignedResponder(null);
@@ -143,7 +172,7 @@ export default function PhoneSosPage() {
     return () => {
       socket.off(`alert:status:${emergencyId}`);
     };
-  }, [socket, emergencyId]);
+  }, [socket, emergencyId, lat, lng]);
 
   // Clean up watchers on unmount
   useEffect(() => {
@@ -182,7 +211,7 @@ export default function PhoneSosPage() {
         message: "I am in danger! (நான் ஆபத்தில் இருக்கிறேன்!)"
       };
 
-      const res = await axios.post(`http://${window.location.hostname}:5000/api/emergency/sos`, payload, {
+      const res = await axios.post(`${API_URL}/emergency/sos`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -230,7 +259,7 @@ export default function PhoneSosPage() {
 
         // Send location coordinates update to backend
         try {
-          await axios.patch(`http://${window.location.hostname}:5000/api/emergency/sos/${alertId}/location`, {
+          await axios.patch(`${API_URL}/emergency/sos/${alertId}/location`, {
             latitude: currentLat,
             longitude: currentLng,
             accuracy: currentAcc
@@ -263,7 +292,7 @@ export default function PhoneSosPage() {
   const cancelEmergency = async () => {
     if (!emergencyId) return;
     try {
-      await axios.patch(`http://${window.location.hostname}:5000/api/alerts/${emergencyId}`, {
+      await axios.patch(`${API_URL}/alerts/${emergencyId}`, {
         status: 'CLOSED',
         description: 'Alert canceled/closed by victim device.'
       }, {

@@ -4,7 +4,7 @@ import Alert from './Alert.js';
 import Log from './Log.js';
 
 // Pre-generated password hashes for demo logins
-const adminHash = bcrypt.hashSync('admin123', 10);
+const adminHash = bcrypt.hashSync('admin@123', 10);
 const policeHash = bcrypt.hashSync('police123', 10);
 const volunteerHash = bcrypt.hashSync('volunteer123', 10);
 
@@ -13,7 +13,7 @@ const defaultUsers = [
   {
     id: 'USR_0001',
     name: 'Rajeswari Sundar',
-    email: 'admin@safetytamil.in',
+    email: 'admin',
     phone: '+91 9876543210',
     password: adminHash,
     role: 'admin',

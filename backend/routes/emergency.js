@@ -1,7 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { dbStore } from '../models/dbStore.js';
-import { io } from '../server.js';
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'safewatch_secret_2025';
@@ -94,6 +93,7 @@ function authenticateToken(req, res, next) {
 
 // POST /api/emergency/sos - Phone triggers SOS emergency alert
 router.post('/sos', authenticateToken, async (req, res) => {
+  const io = req.app.get('io');
   try {
     const { emergencyId, victimId, latitude, longitude, accuracy, timestamp, emergencyStatus, message } = req.body;
 
@@ -222,6 +222,7 @@ router.post('/sos', authenticateToken, async (req, res) => {
 
 // PATCH /api/emergency/sos/:id/location - Continuously update GPS location of active SOS
 router.patch('/sos/:id/location', authenticateToken, async (req, res) => {
+  const io = req.app.get('io');
   try {
     const { latitude, longitude, accuracy } = req.body;
     if (latitude === undefined || longitude === undefined) {

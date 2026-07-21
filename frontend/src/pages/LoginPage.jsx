@@ -73,7 +73,6 @@ export default function LoginPage() {
 
             <div className="space-y-3">
               {[
-                { id: 'admin', title: 'ADMINISTRATOR', desc: 'Tamil Nadu Safety Dispatch Control Center', icon: Shield, color: 'border-slate-800 bg-slate-900/40 hover:bg-slate-900/60 hover:border-red-500/30' },
                 { id: 'police', title: 'POLICE OFFICER', desc: 'Law Enforcement First Responder Console', icon: ShieldAlert, color: 'border-slate-800 bg-slate-900/40 hover:bg-slate-900/60 hover:border-blue-500/30' },
                 { id: 'volunteer', title: 'VOLUNTEER / PEOPLE RESPONDER', desc: 'District Safety Community Circle Assistance', icon: Users, color: 'border-slate-800 bg-slate-900/40 hover:bg-slate-900/60 hover:border-cyan-500/30' }
               ].map(roleItem => {
@@ -222,11 +221,7 @@ export default function LoginPage() {
               </p>
             )}
 
-            {selectedRole === 'admin' && (
-              <p className="text-center text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
-                Administrator access is restricted. Contact operations for credentials.
-              </p>
-            )}
+
 
           </div>
         )}

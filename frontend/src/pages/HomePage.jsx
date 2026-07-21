@@ -65,8 +65,16 @@ export default function HomePage() {
       </main>
 
       {/* Footer */}
-      <footer className="py-6 text-center text-xs text-slate-600 border-t border-slate-900 font-semibold uppercase tracking-wider bg-[#060810]">
-        State-of-the-Art Operations Command Center — Tamil Nadu Public Security Network © 2026.
+      <footer className="py-6 text-center text-xs text-slate-600 border-t border-slate-900 font-semibold uppercase tracking-wider bg-[#060810] space-y-1">
+        <div>State-of-the-Art Operations Command Center — Tamil Nadu Public Security Network © 2026.</div>
+        <div>
+          <button 
+            onClick={() => navigate('/admin/login')} 
+            className="text-[9px] text-red-500 hover:text-red-400 font-bold hover:underline tracking-widest uppercase cursor-pointer"
+          >
+            Go to Administrator Portal
+          </button>
+        </div>
       </footer>
 
     </div>

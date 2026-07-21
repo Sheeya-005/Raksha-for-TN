@@ -55,6 +55,27 @@ export function setupSocketHandlers(io) {
 
       // Broadcast update to Admin panel
       io.emit('responder:location:changed', { userId, lat, lng, timestamp: new Date() });
+
+      // Synchronize location updates with assigned active alerts
+      try {
+        const alerts = await dbStore.getAlerts();
+        const activeAlerts = alerts.filter(a => 
+          a.assignedResponder === userId && 
+          a.status !== 'Resolved' && 
+          a.status !== 'RESOLVED' && 
+          a.status !== 'CLOSED'
+        );
+        for (const alert of activeAlerts) {
+          const updatedAlert = await dbStore.updateAlert(alert.id, {
+            responderLat: Number(lat),
+            responderLng: Number(lng)
+          });
+          io.emit('alert:update', updatedAlert);
+          io.emit(`alert:status:${alert.id}`, updatedAlert);
+        }
+      } catch (err) {
+        console.error('Error syncing responder coordinates with alert:', err);
+      }
     });
 
     // Smartwatch registration (Simulator or Wearable connection)

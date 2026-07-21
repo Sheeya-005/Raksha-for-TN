@@ -1,8 +1,22 @@
 import express from 'express';
 import { dbStore } from '../models/dbStore.js';
-import { io } from '../server.js';
+import jwt from 'jsonwebtoken';
 
 const router = express.Router();
+const JWT_SECRET = process.env.JWT_SECRET || 'safewatch_secret_2025';
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ message: 'Authentication token required' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ message: 'Invalid or expired token' });
+    req.user = user;
+    next();
+  });
+}
 
 // Helper: Calculate distance using Haversine formula (returns distance in km)
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -43,6 +57,7 @@ router.get('/:id', async (req, res) => {
 
 // POST /api/alerts - SOS Button Pressed (Smartwatch API endpoint)
 router.post('/', async (req, res) => {
+  const io = req.app.get('io');
   try {
     const { victimName, victimPhone, lat, lng, victimId } = req.body;
     
@@ -167,7 +182,8 @@ router.post('/', async (req, res) => {
 });
 
 // PATCH /api/alerts/:id - Update alert status & timeline
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', authenticateToken, async (req, res) => {
+  const io = req.app.get('io');
   try {
     const { status, description } = req.body;
     const validStatuses = [
@@ -193,17 +209,22 @@ router.patch('/:id', async (req, res) => {
 
     if (status === 'Accepted' || status === 'ACCEPTED') {
       updates.acceptedTime = new Date();
-      // Update responder status to Busy/Responding in database
-      if (alert.assignedResponder) {
-        await dbStore.updateUser(alert.assignedResponder, { availabilityStatus: 'Responding' });
+      updates.assignedResponder = req.user.id;
+      updates.responderType = req.user.role;
+      const responder = await dbStore.getUserById(req.user.id);
+      if (responder) {
+        updates.responderLat = responder.lat;
+        updates.responderLng = responder.lng;
       }
+      await dbStore.updateUser(req.user.id, { availabilityStatus: 'Responding' });
     } else if (status === 'Reached Location' || status === 'REACHED_LOCATION') {
       updates.arrivalTime = new Date();
     } else if (status === 'Resolved' || status === 'RESOLVED' || status === 'CLOSED') {
       updates.resolutionTime = new Date();
       // Free up the responder
-      if (alert.assignedResponder) {
-        await dbStore.updateUser(alert.assignedResponder, { availabilityStatus: 'Available' });
+      const responderId = alert.assignedResponder || req.user.id;
+      if (responderId) {
+        await dbStore.updateUser(responderId, { availabilityStatus: 'Available' });
       }
     }
 

@@ -153,6 +153,15 @@ export default function VolunteerDashboard() {
     }
   }, [assignedAlert]);
 
+  useEffect(() => {
+    if (activeCase) {
+      const updated = liveAlerts.find(a => a.id === activeCase.id);
+      if (updated) {
+        setActiveCase(updated);
+      }
+    }
+  }, [liveAlerts]);
+
   const handleLocationSimulation = (simLat, simLng) => {
     setLat(simLat);
     setLng(simLng);

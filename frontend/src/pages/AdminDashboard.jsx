@@ -56,9 +56,44 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [logs, setLogs] = useState([]);
   const [viewMode, setViewMode] = useState('marker'); // marker, heatmap
-  
+
   // Navigation tabs matching sidebar
   const [activeTab, setActiveTab] = useState('overview'); // overview, live-map, active-emergencies, district-analytics, responders-police, responders-volunteers, history, logs
+
+  // Settings Form state
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      await axios.post(`${getApiUrl()}/users/change-password`, {
+        userId: user.id,
+        oldPassword,
+        newPassword
+      });
+      toast.success("Security password changed successfully");
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to update password");
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
 
   // Filters for alerts
   const [statusFilter, setStatusFilter] = useState('All');
@@ -263,7 +298,8 @@ export default function AdminDashboard() {
               { id: 'responders-police', label: 'Police Officers', icon: Shield },
               { id: 'responders-volunteers', label: 'Volunteers', icon: Users },
               { id: 'history', label: 'Emergency History', icon: Clock },
-              { id: 'logs', label: 'System Logs', icon: List }
+              { id: 'logs', label: 'System Logs', icon: List },
+              { id: 'settings', label: 'Security Settings', icon: Settings }
             ].map(tabItem => {
               const TabIcon = tabItem.icon;
               return (
@@ -790,6 +826,221 @@ export default function AdminDashboard() {
                 </div>
               )}
 
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Police Officers */}
+        {activeTab === 'responders-police' && (
+          <div className="p-6 space-y-4 animate-fade-in">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Police First Responder Registry</h3>
+            <div className="border border-slate-900 rounded-xl overflow-hidden bg-slate-950/20 text-xs">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-900 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    <th className="px-4 py-3">User ID</th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Phone</th>
+                    <th className="px-4 py-3">Availability</th>
+                    <th className="px-4 py-3">Account Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.filter(u => u.role === 'police').map(u => (
+                    <tr key={u.id} className="border-b border-slate-900 text-slate-300">
+                      <td className="px-4 py-3 font-mono font-bold text-slate-400">{u.id}</td>
+                      <td className="px-4 py-3 font-bold text-white">{u.name}</td>
+                      <td className="px-4 py-3 font-mono text-slate-400">{u.email}</td>
+                      <td className="px-4 py-3 text-slate-300">{u.phone}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase ${
+                          u.availabilityStatus === 'Available' ? 'bg-green-500/10 text-green-400' : 'bg-slate-800 text-slate-400'
+                        }`}>{u.availabilityStatus}</span>
+                      </td>
+                      <td className="px-4 py-3 capitalize font-semibold text-slate-300">{u.accountStatus || 'active'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={async () => {
+                            const newStatus = u.accountStatus === 'suspended' ? 'active' : 'suspended';
+                            try {
+                              await axios.patch(`${getApiUrl()}/users/${u.id}/account-status`, { status: newStatus });
+                              fetchSystemData();
+                              toast.success(`User ${u.name} has been ${newStatus}.`);
+                            } catch (err) {
+                              toast.error('Failed to change user status.');
+                            }
+                          }}
+                          className={`px-2.5 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${
+                            u.accountStatus === 'suspended'
+                              ? 'bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20'
+                              : 'bg-red-600/10 border border-red-500/20 text-red-400 hover:bg-red-600/20'
+                          }`}
+                        >
+                          {u.accountStatus === 'suspended' ? 'Activate' : 'Suspend'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Volunteers */}
+        {activeTab === 'responders-volunteers' && (
+          <div className="p-6 space-y-4 animate-fade-in">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Community Volunteer Registry</h3>
+            <div className="border border-slate-900 rounded-xl overflow-hidden bg-slate-950/20 text-xs">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-900 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    <th className="px-4 py-3">User ID</th>
+                    <th className="px-4 py-3">Name</th>
+                    <th className="px-4 py-3">Email</th>
+                    <th className="px-4 py-3">Phone</th>
+                    <th className="px-4 py-3">Availability</th>
+                    <th className="px-4 py-3">Account Status</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.filter(u => u.role === 'volunteer').map(u => (
+                    <tr key={u.id} className="border-b border-slate-900 text-slate-300">
+                      <td className="px-4 py-3 font-mono font-bold text-slate-400">{u.id}</td>
+                      <td className="px-4 py-3 font-bold text-white">{u.name}</td>
+                      <td className="px-4 py-3 font-mono text-slate-400">{u.email}</td>
+                      <td className="px-4 py-3 text-slate-300">{u.phone}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase ${
+                          u.availabilityStatus === 'Available' ? 'bg-green-500/10 text-green-400' : 'bg-slate-800 text-slate-400'
+                        }`}>{u.availabilityStatus}</span>
+                      </td>
+                      <td className="px-4 py-3 capitalize font-semibold text-slate-300">{u.accountStatus || 'active'}</td>
+                      <td className="px-4 py-3 text-right">
+                        <button
+                          onClick={async () => {
+                            const newStatus = u.accountStatus === 'suspended' ? 'active' : 'suspended';
+                            try {
+                              await axios.patch(`${getApiUrl()}/users/${u.id}/account-status`, { status: newStatus });
+                              fetchSystemData();
+                              toast.success(`User ${u.name} has been ${newStatus}.`);
+                            } catch (err) {
+                              toast.error('Failed to change user status.');
+                            }
+                          }}
+                          className={`px-2.5 py-1 text-[10px] font-bold rounded cursor-pointer transition-all ${
+                            u.accountStatus === 'suspended'
+                              ? 'bg-green-600/10 border border-green-500/20 text-green-400 hover:bg-green-600/20'
+                              : 'bg-red-600/10 border border-red-500/20 text-red-400 hover:bg-red-600/20'
+                          }`}
+                        >
+                          {u.accountStatus === 'suspended' ? 'Activate' : 'Suspend'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Emergency History */}
+        {activeTab === 'history' && (
+          <div className="p-6 space-y-4 animate-fade-in">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Emergency Incident History Log</h3>
+            <div className="border border-slate-900 rounded-xl overflow-hidden bg-slate-950/20 text-xs">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-slate-900 border-b border-slate-800 text-[10px] uppercase font-bold tracking-wider text-slate-400">
+                    <th className="px-4 py-3">Alert ID</th>
+                    <th className="px-4 py-3">Victim Name</th>
+                    <th className="px-4 py-3">District</th>
+                    <th className="px-4 py-3">Coordinates</th>
+                    <th className="px-4 py-3">Trigger Time</th>
+                    <th className="px-4 py-3">Assigned Responder</th>
+                    <th className="px-4 py-3">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {liveAlerts.filter(a => !isAlertActive(a)).map(a => (
+                    <tr key={a.id} className="border-b border-slate-900 text-slate-350">
+                      <td className="px-4 py-3 font-mono font-bold text-slate-400">{a.id}</td>
+                      <td className="px-4 py-3 font-bold text-slate-350">{a.victimName}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-300">{a.district || 'Chennai'}</td>
+                      <td className="px-4 py-3 font-mono">{a.lat.toFixed(4)}, {a.lng.toFixed(4)}</td>
+                      <td className="px-4 py-3 text-slate-300">{new Date(a.triggerTime || a.timestamp).toLocaleString()}</td>
+                      <td className="px-4 py-3 capitalize text-slate-300">{a.assignedResponder ? `${a.responderType}: ${users.find(u => u.id === a.assignedResponder)?.name || a.assignedResponder}` : 'None'}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-0.5 rounded font-bold text-[9px] uppercase ${getStatusBadge(a.status)}`}>{a.status}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Tab: Security Settings */}
+        {activeTab === 'settings' && (
+          <div className="p-6 space-y-6 max-w-md animate-fade-in">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest">Security Configuration</h3>
+            
+            <div className="p-6 border border-slate-900 bg-slate-950/40 rounded-xl space-y-5 text-xs">
+              <div className="border-b border-slate-900 pb-3">
+                <h4 className="font-extrabold text-white text-sm">Change Security Password</h4>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mt-0.5">Change state command portal password</p>
+              </div>
+
+              <form onSubmit={handlePasswordChange} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block">Current Password</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={oldPassword}
+                    onChange={e => setOldPassword(e.target.value)}
+                    className="w-full bg-[#0E1322] border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-red-500/50"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block">New Password</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="w-full bg-[#0E1322] border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-red-500/50"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase text-slate-400 block">Confirm New Password</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                    className="w-full bg-[#0E1322] border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-red-500/50"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={updatingPassword}
+                  className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold uppercase tracking-wider shadow-lg transition-all cursor-pointer text-center"
+                >
+                  {updatingPassword ? 'Changing Password...' : 'Change Password'}
+                </button>
+              </form>
             </div>
           </div>
         )}
