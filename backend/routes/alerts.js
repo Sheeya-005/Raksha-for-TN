@@ -69,7 +69,7 @@ router.post('/', async (req, res) => {
     const resolvedVictimPhone = victimPhone || '+91 9998887776';
     const resolvedVictimId = victimId || `SW_${Math.floor(1000 + Math.random() * 9000)}`;
 
-    // 1. Get all available users
+    // 1. Get all available users and compute all within 15 km radius
     const allUsers = await dbStore.getUsers();
     
     // Filter available police officers
@@ -81,6 +81,13 @@ router.post('/', async (req, res) => {
     const availableVolunteers = allUsers.filter(
       u => u.role === 'volunteer' && u.availabilityStatus === 'Available'
     );
+
+    const nearbyResponders = allUsers.filter(u => {
+      if (u.role !== 'police' && u.role !== 'volunteer') return false;
+      if (u.availabilityStatus !== 'Available') return false;
+      const dist = calculateDistance(lat, lng, u.lat, u.lng);
+      return dist <= 15; // Within 15 km radius
+    });
 
     let selectedResponder = null;
     let selectedType = 'none';
@@ -126,29 +133,23 @@ router.post('/', async (req, res) => {
 
     const newAlert = await dbStore.createAlert(alertData);
 
+    // Build set of responder IDs to notify (both the single closest and all within 15 km)
+    const notifyUserIds = new Set();
+    if (selectedResponder) notifyUserIds.add(selectedResponder.id);
+    nearbyResponders.forEach(r => notifyUserIds.add(r.id));
+
     // Automatically trigger telephony alert / dispatch workflow
     if (selectedResponder) {
       // Simulate Telephony Call
       console.log(`\n📞 [TELEPHONY API - TWILIO] placing automated phone call to ${selectedResponder.name} (${selectedResponder.phone})`);
       console.log(`🔊 [CALL PLAYBACK]: "A woman is in an emergency. Her location has been sent to your mailbox. Please respond immediately."\n`);
 
-      // Update responder status to "Responding" or let them transition manually via panel.
-      // We will mark the responder as 'Busy' or 'Responding' once they accept the alert.
       // Create system log
       await dbStore.createLog(
         selectedResponder.id,
         'DISPATCH_ASSIGNED',
         `Alert ${newAlert.id} automatically assigned to ${selectedType} responder ${selectedResponder.name} at a distance of ${minDistance.toFixed(2)} km.`
       );
-
-      // Trigger socket event for specific user
-      if (io) {
-        io.emit(`alert:dispatch:${selectedResponder.id}`, {
-          alert: newAlert,
-          distance: minDistance,
-          voiceCallPlayed: true
-        });
-      }
     } else {
       // Create system log without assignment
       await dbStore.createLog(
@@ -156,6 +157,22 @@ router.post('/', async (req, res) => {
         'DISPATCH_FAILED',
         `Alert ${newAlert.id} triggered but no active available responder was found in database.`
       );
+    }
+
+    // Alert all targeted responders via socket.io
+    if (io && notifyUserIds.size > 0) {
+      for (const responderId of notifyUserIds) {
+        const responder = allUsers.find(u => u.id === responderId);
+        if (responder) {
+          const dist = calculateDistance(lat, lng, responder.lat, responder.lng);
+          io.to(`user:${responder.id}`).emit('alert:dispatch', {
+            alert: newAlert,
+            distance: dist,
+            voiceCallPlayed: true
+          });
+          console.log(`[Socket] Alert dispatched to responder: ${responder.name} (${responder.role}) at distance ${dist.toFixed(2)} km.`);
+        }
+      }
     }
 
     // Broadcast new alert to admin socket

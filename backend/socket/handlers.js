@@ -106,10 +106,17 @@ export function setupSocketHandlers(io) {
         const resolvedVictimPhone = victimPhone || '+91 9998887776';
         const resolvedVictimId = victimId || `SW_${Math.floor(1000 + Math.random() * 9000)}`;
 
-        // Retrieve available responders
+        // Retrieve available responders and compute all within 15 km radius
         const allUsers = await dbStore.getUsers();
         const availablePolice = allUsers.filter(u => u.role === 'police' && u.availabilityStatus === 'Available');
         const availableVolunteers = allUsers.filter(u => u.role === 'volunteer' && u.availabilityStatus === 'Available');
+
+        const nearbyResponders = allUsers.filter(u => {
+          if (u.role !== 'police' && u.role !== 'volunteer') return false;
+          if (u.availabilityStatus !== 'Available') return false;
+          const dist = calculateDistance(lat, lng, u.lat, u.lng);
+          return dist <= 15; // Within 15 km radius
+        });
 
         let selectedResponder = null;
         let selectedType = 'none';
@@ -156,6 +163,11 @@ export function setupSocketHandlers(io) {
 
         const newAlert = await dbStore.createAlert(alertData);
 
+        // Build set of responder IDs to notify (both the single closest and all within 15 km)
+        const notifyUserIds = new Set();
+        if (selectedResponder) notifyUserIds.add(selectedResponder.id);
+        nearbyResponders.forEach(r => notifyUserIds.add(r.id));
+
         if (selectedResponder) {
           // Twilio simulation log
           console.log(`\n📞 [TELEPHONY API - TWILIO] placing automated phone call to ${selectedResponder.name} (${selectedResponder.phone})`);
@@ -166,19 +178,28 @@ export function setupSocketHandlers(io) {
             'DISPATCH_ASSIGNED',
             `Alert ${newAlert.id} automatically assigned to nearest ${selectedType} responder ${selectedResponder.name} at distance ${minDistance.toFixed(2)} km.`
           );
-
-          // Alert target responder via room
-          io.to(`user:${selectedResponder.id}`).emit('alert:dispatch', {
-            alert: newAlert,
-            distance: minDistance,
-            voiceCallPlayed: true
-          });
         } else {
           await dbStore.createLog(
             'system',
             'DISPATCH_FAILED',
             `Alert ${newAlert.id} triggered but no active available responder was found in database.`
           );
+        }
+
+        // Alert all targeted responders via socket.io
+        if (notifyUserIds.size > 0) {
+          for (const responderId of notifyUserIds) {
+            const responder = allUsers.find(u => u.id === responderId);
+            if (responder) {
+              const dist = calculateDistance(lat, lng, responder.lat, responder.lng);
+              io.to(`user:${responder.id}`).emit('alert:dispatch', {
+                alert: newAlert,
+                distance: dist,
+                voiceCallPlayed: true
+              });
+              console.log(`[Socket] Alert dispatched to responder: ${responder.name} (${responder.role}) at distance ${dist.toFixed(2)} km.`);
+            }
+          }
         }
 
         // Broadcast to admins
